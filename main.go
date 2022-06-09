@@ -22,7 +22,7 @@ var imports = []string{
 
 var decodeFunc = []string{
 	"func GetFullSwagger() string {",
-	"	zipped, _ := base64.StdEncoding.DecodeString(strings.Join(swaggerSpec, \"\"))",
+	"	zipped, _ := base64.StdEncoding.DecodeString(strings.Join(openapiSpec, \"\"))",
 	"	zr, _ := gzip.NewReader(bytes.NewReader(zipped))",
 	"	var buf bytes.Buffer",
 	"	_, _ = buf.ReadFrom(zr)",
@@ -36,8 +36,7 @@ func main() {
 	pkg := flag.String("package", "main", "The package for the output class")
 
 	flag.Parse()
-	buf := getZippedContent(apiFile)
-	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+	encoded := getZippedContentBase64(apiFile)
 	if file, err := os.Create(*outFile); err != nil {
 		panic(err)
 	} else {
@@ -47,7 +46,7 @@ func main() {
 			writer.WriteString(l + "\n")
 		}
 
-		writer.WriteString("var swaggerSpec = []string{\n")
+		writer.WriteString("var openapiSpec = []string{\n")
 		writer.WriteString("\t\"")
 		for i, r := range encoded {
 			writer.WriteRune(r)
@@ -67,7 +66,7 @@ func main() {
 	}
 }
 
-func getZippedContent(apiFile *string) bytes.Buffer {
+func getZippedContentBase64(apiFile *string) string {
 	var content []byte
 	if file, err := os.Open(*apiFile); err != nil {
 		panic(err)
@@ -82,9 +81,10 @@ func getZippedContent(apiFile *string) bytes.Buffer {
 	defer func(zw *gzip.Writer) {
 		_ = zw.Close()
 	}(zw)
+
 	if _, err := zw.Write(content); err != nil {
 		panic(err)
 	}
 	_ = zw.Flush()
-	return buf
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }
